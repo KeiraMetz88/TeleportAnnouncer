@@ -291,6 +291,8 @@ local function announceSpell(spellID, isSucceeded)
                 
     if IsInGroup() or IsInRaid() then
         SendChatMessage(messagePrefix .. message, IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY")
+    elseif false then -- for debug
+        print(messagePrefix .. message)
     end
 end
 
@@ -305,7 +307,7 @@ frame:SetScript("OnEvent", function(self, event, ...)
         local addOnName = ...
         if addOnName == ADDON_NAME then
             prepareDBAndSettings()
-            frame:UnRegisterEvent("ADDON_LOADED")
+            self:UnregisterEvent("ADDON_LOADED")
         end
     elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_EQUIPMENT_CHANGED" then
         buildTeleportItems()

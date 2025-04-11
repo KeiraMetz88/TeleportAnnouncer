@@ -2,6 +2,8 @@
 -- 衷心感谢KeiraMetz、雪白的黑牛(老农整合包)在插件制作和后续更新中给予的无私帮助
 -- 插件灵感来自peepoStudy的M+DungeonTeleports传送门库和NGA@y45853160的传送通报WA
 
+local ADDON_NAME = ...
+
 local teleportSpells = {
     --地心之战
     [445417]={spell="艾拉-卡拉，回响之城"},
@@ -197,6 +199,40 @@ local teleportSpells = {
     [265225]={spell="地下隧道"}, --钻探机
 }
 
+local function prepareDBAndSettings()
+    TeleportAnnouncerDB = (type(TeleportAnnouncerDB) == "table" and TeleportAnnouncerDB) or {}
+
+    local LibBlzSettings = LibStub("LibBlzSettings-1.0")
+    local CONTROL_TYPE = LibBlzSettings.CONTROL_TYPE
+    local SETTING_TYPE = LibBlzSettings.SETTING_TYPE
+    local settings = {
+        name = "传送通报",
+        settings = {
+            {
+                controlType = CONTROL_TYPE.DROPDOWN,
+                settingType = SETTING_TYPE.ADDON_VARIABLE,
+                name = "通报时机",
+                tooltip = "设置通报的时机",
+                key = "AnnounceTiming",
+                default = 1,
+                options = {
+                    { "施法开始", "在开始施法时候就通报" },
+                    { "施法结束", "在施法完成时候才通报" },
+                }
+            },
+            {
+                controlType = CONTROL_TYPE.CHECKBOX,
+                settingType = SETTING_TYPE.ADDON_VARIABLE,
+                name = "不通报物品名",
+                tooltip = "使用法术名代替物品名",
+                key = "DoNotShowItem",
+                default = false
+            },
+        }
+    }
+    LibBlzSettings:RegisterVerticalSettingsTable(ADDON_NAME, settings, TeleportAnnouncerDB, true)
+end
+
 -- 装备中的可施法物品
 local teleportItems = {}
 -- 生成装备中的可施法物品
@@ -216,39 +252,62 @@ local function buildTeleportItems()
 end
 
 -- 施法事件主方法
-local function announceSpell(spellID, onlyInstant)
+local function announceSpell(spellID, isSucceeded)
     local teleportData = teleportSpells[spellID]
-    if teleportData then
-        if onlyInstant then
-            local spellInfo = C_Spell.GetSpellInfo(spellID)
-            if not spellInfo then return end
-            if spellInfo.castTime ~= 0 then return end --考虑瞬发施法
-        end
-        local message
+    if not teleportData then return end
+    local announceTiming = TeleportAnnouncerDB and TeleportAnnouncerDB["AnnounceTiming"] or 1
+    local doNotShowItem = TeleportAnnouncerDB and TeleportAnnouncerDB["DoNotShowItem"] or false
+
+    -- 施法结束通报+施法开始事件：不考虑
+    if announceTiming == 2 and not isSucceeded then
+        return
+    end
+
+    local messagePrefix = announceTiming == 1 and "正在" or "已经"
+
+    -- 施法完成事件+施法开始通报：仅考虑瞬发施法
+    if isSucceeded and announceTiming == 1 then
+        local spellInfo = C_Spell.GetSpellInfo(spellID)
+        if not spellInfo then return end
+        if spellInfo.castTime ~= 0 then return end
+        -- 瞬发施法不管什么时候都可以通报“已经”
+        messagePrefix = "已经"
+    end
+
+    local message
+    if not doNotShowItem then
         if teleportItems[spellID] then
-            message = string.format("正在使用%s，前往：%s", teleportItems[spellID], teleportData.spell)
+            message = string.format("使用%s，前往：%s", teleportItems[spellID], teleportData.spell)
         elseif teleportData.item then
             local _, itemLink = C_Item.GetItemInfo(teleportData.item)
             itemLink = itemLink or "(未知物品)"
-            message = string.format("正在使用%s，前往：%s", itemLink, teleportData.spell)
-        else
-            local spellLink = C_Spell.GetSpellLink(spellID) or "(未知法术)"
-            message = string.format("正在施放%s，前往：%s", spellLink, teleportData.spell)
+            message = string.format("使用%s，前往：%s", itemLink, teleportData.spell)
         end
+    end
+    if not message then
+        local spellLink = C_Spell.GetSpellLink(spellID) or "(未知法术)"
+        message = string.format("施放%s，前往：%s", spellLink, teleportData.spell)
+    end
                 
-        if IsInGroup() or IsInRaid() then
-            SendChatMessage(message, IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY")
-        end
+    if IsInGroup() or IsInRaid() then
+        SendChatMessage(messagePrefix .. message, IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY")
     end
 end
 
 local frame = CreateFrame("Frame")
+frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-frame:RegisterEvent("UNIT_SPELLCAST_START")
-frame:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+frame:RegisterUnitEvent("UNIT_SPELLCAST_START", "player")
+frame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
 frame:SetScript("OnEvent", function(self, event, ...)
-    if event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_EQUIPMENT_CHANGED" then
+    if event == "ADDON_LOADED" then
+        local addOnName = ...
+        if addOnName == ADDON_NAME then
+            prepareDBAndSettings()
+            frame:UnRegisterEvent("ADDON_LOADED")
+        end
+    elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_EQUIPMENT_CHANGED" then
         buildTeleportItems()
     elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED" then
         local unitTarget, _, spellID = ...

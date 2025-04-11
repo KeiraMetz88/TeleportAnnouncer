@@ -6,6 +6,8 @@
 ## Notes: 使用传送法术时，自动在队伍频道通报目的地
 ## Author: 电视卫士（SGSwdzgr）
 
+## SavedVariables: TeleportAnnouncerDB
+
 ## IconTexture: Interface\AddOns\TeleportAnnouncer\icon.tga
 ## X-Curse-Project-ID: 1226712
 
@@ -21,4 +23,5 @@
 ## Category-zhCN: 聊天
 ## Category-zhTW: 對話
 
+Libs\libs.xml
 TeleportAnnouncer.lua

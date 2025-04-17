@@ -263,7 +263,8 @@ local function announceSpell(spellID, isSucceeded)
         return
     end
 
-    local messagePrefix = announceTiming == 1 and "正在" or "已经"
+    local messagePrefix = announceTiming == 1 and "正在" or "已"
+    local messageGo = announceTiming == 1 and "前往" or "抵达"
 
     -- 施法完成事件+施法开始通报：仅考虑瞬发施法
     if isSucceeded and announceTiming == 1 then
@@ -271,28 +272,29 @@ local function announceSpell(spellID, isSucceeded)
         if not spellInfo then return end
         if spellInfo.castTime ~= 0 then return end
         -- 瞬发施法不管什么时候都可以通报“已经”
-        messagePrefix = "已经"
+        messagePrefix = "已"
+        messageGo = "抵达"
     end
 
     local message
     if not doNotShowItem then
         if teleportItems[spellID] then
-            message = string.format("使用%s，前往：%s", teleportItems[spellID], teleportData.spell)
+            message = string.format("%s使用%s，%s：%s", messagePrefix, teleportItems[spellID], messageGo, teleportData.spell)
         elseif teleportData.item then
             local _, itemLink = C_Item.GetItemInfo(teleportData.item)
             itemLink = itemLink or "(未知物品)"
-            message = string.format("使用%s，前往：%s", itemLink, teleportData.spell)
+            message = string.format("%s使用%s，%s：%s", messagePrefix, itemLink, messageGo, teleportData.spell)
         end
     end
     if not message then
         local spellLink = C_Spell.GetSpellLink(spellID) or "(未知法术)"
-        message = string.format("施放%s，前往：%s", spellLink, teleportData.spell)
+        message = string.format("%s施放%s，%s：%s", messagePrefix, spellLink, messageGo, teleportData.spell)
     end
                 
     if IsInGroup() or IsInRaid() then
-        SendChatMessage(messagePrefix .. message, IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY")
+        SendChatMessage(message, IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY")
     elseif false then -- for debug
-        print(messagePrefix .. message)
+        print(message)
     end
 end
 

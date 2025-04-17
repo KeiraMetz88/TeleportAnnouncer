@@ -5,7 +5,7 @@
     This library is based on the Blizzard Settings API and is used to quickly serialize tables into Blizzard Vertical Settings Categories.
 ]]
 
-local MAJOR, MINOR = "LibBlzSettings-1.0", 110100
+local MAJOR, MINOR = "LibBlzSettings-1.0", 110101
 
 local LibBlzSettings = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -26,6 +26,8 @@ LibBlzSettings.CONTROL_TYPE = {
     CHECKBOX_AND_SLIDER = 6,            -- 选择框和滑动条
     BUTTON = 7,                         -- 按钮
     CHECKBOX_AND_BUTTON = 8,            -- 选择框和按钮
+    EDITBOX = 9,                        -- 输入框
+    CHECKBOX_AND_EDITBOX = 10,          -- 选择框和输入框
 
     CUSTOM_FRAME = 51,                  -- 自定义框体
     LIB_SHARED_MEDIA_DROPDOWN = 101,    -- 下拉菜单用以选择一种LibSharedMedia素材类型, 需要LibSharedMedia-3.0库(这应当在你的插件中包含), 否则不会显示
@@ -185,8 +187,7 @@ local CONTROL_TYPE_METADATA = {
             local checkboxSetting = Utils.RegisterSetting(addOnName, category, dataTbl, database, Settings.VarType.Boolean)
             local dropdownSetting = Utils.RegisterSetting(addOnName, category, dataTbl.dropdown, database, dropdownVarType, dataTbl.dropdown.name or dataTbl.name)
 
-            local data =
-            {
+            local data = {
                 name = dataTbl.name,
                 tooltip = dataTbl.tooltip,
                 setting = checkboxSetting,  -- 把选择框的设置项单独加进去 子选项才会跟着该选项锁定
@@ -252,8 +253,7 @@ local CONTROL_TYPE_METADATA = {
                 end)
             end
             
-            local data =
-            {
+            local data = {
                 name = dataTbl.name,
                 tooltip = dataTbl.tooltip,
                 setting = checkboxSetting,  -- 把选择框的设置项单独加进去 子选项才会跟着该选项锁定
@@ -418,7 +418,46 @@ local CONTROL_TYPE_METADATA = {
             end
             ]]
         end
-    }
+    },
+    [CONTROL_TYPE.EDITBOX] = {
+        setting = {
+            varType = Settings.VarType.String
+        },
+        buildFunction = function (addOnName, category, layout, dataTbl, database)
+            local setting = Utils.RegisterSetting(addOnName, category, dataTbl, database, Settings.VarType.String)
+            local initializer = Settings.CreateControlInitializer("LibBlzSettingsEditboxControlTemplate", setting, nil, dataTbl.tooltip)
+            initializer:AddSearchTags(dataTbl.name)
+            layout:AddInitializer(initializer)
+            return setting, initializer
+        end
+    },
+    [CONTROL_TYPE.CHECKBOX_AND_EDITBOX] = {
+        setting = {
+            inherits = CONTROL_TYPE.CHECKBOX,
+        },
+        requireArguments = {
+            editbox = Utils.CheckControlType(CONTROL_TYPE.EDITBOX)
+        },
+        buildFunction = function (addOnName, category, layout, dataTbl, database)
+            local checkboxSetting = Utils.RegisterSetting(addOnName, category, dataTbl, database, Settings.VarType.Boolean)
+            local editboxSetting = Utils.RegisterSetting(addOnName, category, dataTbl.editbox, database, Settings.VarType.String, dataTbl.editbox.name or dataTbl.name)
+            local data = {
+                name = dataTbl.name,
+                tooltip = dataTbl.tooltip,
+                setting = checkboxSetting,  -- 把选择框的设置项单独加进去 子选项才会跟着该选项锁定
+                cbSetting = checkboxSetting,
+                cbLabel = dataTbl.name,
+                cbTooltip = dataTbl.tooltip,
+                editboxSetting = editboxSetting,
+                editboxLabel = dataTbl.editbox.name or dataTbl.name,
+                editboxTooltip = dataTbl.editbox.tooltip or dataTbl.tooltip,
+            }
+            local initializer = Settings.CreateSettingInitializer("LibBlzSettingsCheckboxEditboxControlTemplate", data)
+            initializer:AddSearchTags(dataTbl.name)
+            layout:AddInitializer(initializer)
+            return checkboxSetting, initializer
+        end
+    },
 }
 
 function Utils.CheckControl(dataTbl, controlType)
@@ -474,6 +513,13 @@ local function SetupControl(addOnName, category, layout, dataTbl, database)
             return
         end
         if type(CONTROL_TYPE_METADATA[dataTbl.controlType].buildFunction) == "function" then
+            -- 指定额外的表 (而不是分类使用的表) 来储存数据
+            if type(dataTbl.database) == "table" then
+                database = dataTbl.database
+            elseif type(dataTbl.database) == "string" and type(_G[dataTbl.database]) == "table" then
+                database = _G[dataTbl.database]
+            end
+
             local setting, initializer = CONTROL_TYPE_METADATA[dataTbl.controlType].buildFunction(addOnName, category, layout, dataTbl, database)
 
             initializer.LibBlzSettingsData = dataTbl
@@ -521,6 +567,24 @@ local function BuildCategory(addOnName, dataTbl, database, parentCategory)
         category, layout = Settings.RegisterVerticalLayoutSubcategory(parentCategory, dataTbl.name)
     else
         category, layout = Settings.RegisterVerticalLayoutCategory(dataTbl.name or addOnName)
+    end
+
+    if type(database) == "table" then
+        -- 提供了表类型作为数据库, 不做额外处理
+    elseif type(database) == "string" and type(_G[database]) == "table" then
+        -- 提供字符串类型, 且对应的全局变量为表类型: 将其作为数据库使用
+        database = _G[database]
+    else
+        -- 如果未指定数据库, 变量将储存到这个空表
+        -- 实际上这个表不会被游戏储存, Reload或登出后所有储存的变量都会丢失
+        database = {}
+    end
+
+    -- 如果此选项分类指定了储存数据用的数据表 将覆盖指定的数据库(此数据库也将应用至子分类以及子选项中)
+    if type(dataTbl.database) == "table" then
+        database = dataTbl.database
+    elseif type(dataTbl.database) == "string" and type(_G[dataTbl.database]) == "table" then
+        database = _G[dataTbl.database]
     end
 
     -- 注册设置项目
@@ -598,10 +662,6 @@ end
 function LibBlzSettings:RegisterVerticalSettingsTable(addOnName, dataTbl, database, addToOptions)
     if addToOptions == nil then
         addToOptions = true
-    end
-
-    if not (database and type(database) == "table") then
-        database = {}
     end
 
     if dataTbl and type(dataTbl) == "table" then

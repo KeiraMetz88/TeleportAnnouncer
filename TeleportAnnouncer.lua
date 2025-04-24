@@ -230,7 +230,12 @@ local function prepareDBAndSettings()
             },
         }
     }
-    LibBlzSettings:RegisterVerticalSettingsTable(ADDON_NAME, settings, TeleportAnnouncerDB, true)
+    local category, _ = LibBlzSettings:RegisterVerticalSettingsTable(ADDON_NAME, settings, TeleportAnnouncerDB, true)
+
+    _G.SLASH_TELEPORTANNOUNCER1 = "/ta";
+    _G.SlashCmdList["TELEPORTANNOUNCER"] = function()
+        Settings.OpenToCategory(category:GetID())
+    end
 end
 
 -- 装备中的可施法物品

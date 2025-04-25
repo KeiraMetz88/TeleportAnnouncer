@@ -1,6 +1,6 @@
-local ADDON_NAME, ns = ...
+local ADDON_NAME, TeleportAnnouncer = ...
 
-function ns:prepareDBAndSettings()
+function TeleportAnnouncer:prepareDBAndSettings()
     TeleportAnnouncerDB = (type(TeleportAnnouncerDB) == "table" and TeleportAnnouncerDB) or {}
 
     local LibBlzSettings = LibStub("LibBlzSettings-1.0")

@@ -1,6 +1,6 @@
-local ADDON_NAME, ns = ...
+local ADDON_NAME, TeleportAnnouncer = ...
 
-ns.teleportSpells = {
+TeleportAnnouncer.teleportSpells = {
     --地心之战
     [445417] = {spell = "艾拉-卡拉，回响之城", keystone = true},
     [445440] = {spell = "燧酿酒庄", keystone = true},
@@ -194,17 +194,17 @@ ns.teleportSpells = {
     [265225] = {spell = "地下隧道"}, --钻探机
 }
 
-ns.teleportItems = {}
-function ns:buildTeleportItems()
-    table.wipe(ns.teleportItems)
+TeleportAnnouncer.teleportItems = {}
+function TeleportAnnouncer:buildTeleportItems()
+    table.wipe(TeleportAnnouncer.teleportItems)
     for inventorySlotID = INVSLOT_FIRST_EQUIPPED, INVSLOT_LAST_EQUIPPED do
         local itemID = GetInventoryItemID("player", inventorySlotID)
         if itemID then
-            local item = Item:CreateFromItemID(itemID.itemID)
+            local item = Item:CreateFromItemID(itemID)
             item:ContinueOnItemLoad(function()
                 local _, spellID = C_Item.GetItemSpell(itemID)
                 if spellID then
-                    ns.teleportItems[spellID] = GetInventoryItemLink("player", inventorySlotID)
+                    TeleportAnnouncer.teleportItems[spellID] = GetInventoryItemLink("player", inventorySlotID)
                 end
             end)
         end

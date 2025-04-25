@@ -1,7 +1,7 @@
-local ADDON_NAME, ns = ...
+local ADDON_NAME, TeleportAnnouncer = ...
 
-function ns:announceSpell(spellID, isSucceeded)
-    local teleportData = ns.teleportSpells[spellID]
+function TeleportAnnouncer:announceSpell(spellID, isSucceeded)
+    local teleportData = TeleportAnnouncer.teleportSpells[spellID]
     if not teleportData then return end
 
     local onlyKeystone = TeleportAnnouncerDB and TeleportAnnouncerDB["OnlyKeystone"] or false
@@ -28,8 +28,8 @@ function ns:announceSpell(spellID, isSucceeded)
 
     local message
     if not doNotShowItem then
-        if ns.teleportItems[spellID] then
-            message = string.format("%s使用%s，%s：%s", messagePrefix, ns.teleportItems[spellID], messageGo, teleportData.spell)
+        if TeleportAnnouncer.teleportItems[spellID] then
+            message = string.format("%s使用%s，%s：%s", messagePrefix, TeleportAnnouncer.teleportItems[spellID], messageGo, teleportData.spell)
         elseif teleportData.item then
             local _, itemLink = C_Item.GetItemInfo(teleportData.item)
             itemLink = itemLink or "(未知物品)"
@@ -58,15 +58,15 @@ frame:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" then
         local addOnName = ...
         if addOnName == ADDON_NAME then
-            ns:prepareDBAndSettings()
+            TeleportAnnouncer:prepareDBAndSettings()
             self:UnregisterEvent("ADDON_LOADED")
         end
     elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_EQUIPMENT_CHANGED" then
-        ns:buildTeleportItems()
+        TeleportAnnouncer:buildTeleportItems()
     elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED" then
         local unitTarget, _, spellID = ...
         if unitTarget == "player" then
-            ns:announceSpell(spellID, event == "UNIT_SPELLCAST_SUCCEEDED")
+            TeleportAnnouncer:announceSpell(spellID, event == "UNIT_SPELLCAST_SUCCEEDED")
         end
     end
 end)

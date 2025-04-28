@@ -1,5 +1,7 @@
 local ADDON_NAME, TeleportAnnouncer = ...
 
+local L = TeleportAnnouncer.Locale
+
 function TeleportAnnouncer:prepareDBAndSettings()
     TeleportAnnouncerDB = (type(TeleportAnnouncerDB) == "table" and TeleportAnnouncerDB) or {}
 
@@ -7,41 +9,41 @@ function TeleportAnnouncer:prepareDBAndSettings()
     local CONTROL_TYPE = LibBlzSettings.CONTROL_TYPE
     local SETTING_TYPE = LibBlzSettings.SETTING_TYPE
     local settings = {
-        name = "传送通报",
+        name = L["addonName"],
         settings = {
             {
                 controlType = CONTROL_TYPE.DROPDOWN,
                 settingType = SETTING_TYPE.ADDON_VARIABLE,
-                name = "通报时机",
-                tooltip = "设置通报的时机",
+                name = L["AnnounceTimingName"],
+                tooltip = L["AnnounceTimingTooltip"],
                 key = "AnnounceTiming",
                 default = 1,
                 options = {
-                    { "施法开始", "在开始施法时候就通报" },
-                    { "施法结束", "在施法完成时候才通报" },
+                    {L["AnnounceTimingO1Name"], L["AnnounceTimingO1Tooltip"]},
+                    {L["AnnounceTimingO2Name"], L["AnnounceTimingO2Tooltip"]},
                 }
             },
             {
                 controlType = CONTROL_TYPE.CHECKBOX,
                 settingType = SETTING_TYPE.ADDON_VARIABLE,
-                name = "不通报物品名",
-                tooltip = "使用法术名代替物品名",
+                name = L["DoNotShowItemName"],
+                tooltip = L["DoNotShowItemTooltip"],
                 key = "DoNotShowItem",
                 default = false
             },
             {
                 controlType = CONTROL_TYPE.CHECKBOX,
                 settingType = SETTING_TYPE.ADDON_VARIABLE,
-                name = "仅通报大秘境传送门",
-                tooltip = "仅通报大秘境传送门",
+                name = L["OnlyKeystoneName"],
+                tooltip = L["OnlyKeystoneTooltip"],
                 key = "OnlyKeystone",
                 default = false
             },
             {
                 controlType = CONTROL_TYPE.CHECKBOX,
                 settingType = SETTING_TYPE.ADDON_VARIABLE,
-                name = "不通报炉石",
-                tooltip = "如达拉然炉石、要塞炉石",
+                name = L["IgnoreHeartstoneName"],
+                tooltip = L["IgnoreHeartstoneTooltip"],
                 key = "IgnoreHeartstone",
                 default = false
             },

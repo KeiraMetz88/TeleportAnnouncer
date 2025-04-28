@@ -1,5 +1,8 @@
 local ADDON_NAME, TeleportAnnouncer = ...
 
+TeleportAnnouncer.Locale = {}
+local L = TeleportAnnouncer.Locale
+
 function TeleportAnnouncer:announceSpell(spellID, isSucceeded)
     local teleportData = TeleportAnnouncer.teleportSpells[spellID]
     if not teleportData then return end
@@ -15,30 +18,30 @@ function TeleportAnnouncer:announceSpell(spellID, isSucceeded)
 
     local doNotShowItem = TeleportAnnouncerDB and TeleportAnnouncerDB["DoNotShowItem"] or false
 
-    local messagePrefix = announceTiming == 1 and "正在" or "已"
-    local messageGo = announceTiming == 1 and "前往" or "抵达"
-
+    local messageTemplateUse = announceTiming == 1 and L["UsingAndHeadingTo"] or L["UsedAndArrivedAt"]
+    local messageTemplateCast = announceTiming == 1 and L["CastingAndHeadingTo"] or L["CastAndArrivedAt"]
     if isSucceeded and announceTiming == 1 then
         local spellInfo = C_Spell.GetSpellInfo(spellID)
         if not spellInfo then return end
         if spellInfo.castTime ~= 0 then return end
-        messagePrefix = "已"
-        messageGo = "抵达"
+        messageTemplateUse = L["UsedAndArrivedAt"]
+        messageTemplateCast = L["CastAndArrivedAt"]
     end
 
     local message
+    local destination = L[string.format("spell_%s", spellID)] or ""
     if not doNotShowItem then
         if TeleportAnnouncer.teleportItems[spellID] then
-            message = string.format("%s使用%s，%s：%s", messagePrefix, TeleportAnnouncer.teleportItems[spellID], messageGo, teleportData.spell)
+            message = string.format(messageTemplateUse, TeleportAnnouncer.teleportItems[spellID], destination)
         elseif teleportData.item then
             local _, itemLink = C_Item.GetItemInfo(teleportData.item)
-            itemLink = itemLink or "(未知物品)"
-            message = string.format("%s使用%s，%s：%s", messagePrefix, itemLink, messageGo, teleportData.spell)
+            itemLink = itemLink or L["UnknownItem"]
+            message = string.format(messageTemplateUse, itemLink, destination)
         end
     end
     if not message then
-        local spellLink = C_Spell.GetSpellLink(spellID) or "(未知法术)"
-        message = string.format("%s施放%s，%s：%s", messagePrefix, spellLink, messageGo, teleportData.spell)
+        local spellLink = C_Spell.GetSpellLink(spellID) or L["UnknownSpell"]
+        message = string.format(messageTemplateCast, spellLink, destination)
     end
                 
     if IsInGroup() or IsInRaid() then

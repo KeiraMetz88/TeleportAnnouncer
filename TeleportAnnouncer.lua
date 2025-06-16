@@ -3,25 +3,60 @@ local ADDON_NAME, TeleportAnnouncer = ...
 TeleportAnnouncer.Locale = {}
 local L = TeleportAnnouncer.Locale
 
+local GetSpellInfo, GetSpellLink = C_Spell.GetSpellInfo, C_Spell.GetSpellLink
+local GetItemInfo = C_Item.GetItemInfo
+local IsInGroup, UnitInRaid, UnitInParty, UnitInBattleground, IsPartyLFG = IsInGroup, UnitInRaid, UnitInParty, UnitInBattleground, IsPartyLFG
+
+local function getConfigByKey(key, default)
+    return TeleportAnnouncerDB and TeleportAnnouncerDB[key] or default
+end
+
+local function sendMessage(message)
+    local channel = nil
+    if UnitInBattleground("player") then
+        channel = "INSTANCE_CHAT"
+    elseif UnitInRaid("player") then
+        if IsPartyLFG then
+            channel = "INSTANCE_CHAT"
+        else
+            local announceChannel = getConfigByKey("AnnounceChannel", 1)
+            channel = announceChannel == 1 and "RAID" or "PARTY"
+        end
+    elseif UnitInParty("player") then
+        channel = IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY"
+    end
+    -- print(message, channel)
+    if channel then
+        SendChatMessage(message, channel)
+    end
+end
+
+-- local lastAnnounceTime, currentTime = 0, nil
 function TeleportAnnouncer:announceSpell(spellID, isSucceeded)
     local teleportData = TeleportAnnouncer.teleportSpells[spellID]
     if not teleportData then return end
 
-    local onlyKeystone = TeleportAnnouncerDB and TeleportAnnouncerDB["OnlyKeystone"] or false
+    -- currentTime = time()
+    -- if currentTime - lastAnnounceTime <= 1 then
+    --     return
+    -- end
+    -- lastAnnounceTime = currentTime
+
+    local onlyKeystone = getConfigByKey("OnlyKeystone", false)
     if onlyKeystone and not teleportData.keystone then return end
 
-    local ignoreHeartstone = TeleportAnnouncerDB and TeleportAnnouncerDB["IgnoreHeartstone"] or false
+    local ignoreHeartstone = getConfigByKey("IgnoreHeartstone", false)
     if ignoreHeartstone and teleportData.heartstone then return end
 
-    local announceTiming = TeleportAnnouncerDB and TeleportAnnouncerDB["AnnounceTiming"] or 1
+    local announceTiming = getConfigByKey("AnnounceTiming", 1)
     if announceTiming == 2 and not isSucceeded then return end
 
-    local doNotShowItem = TeleportAnnouncerDB and TeleportAnnouncerDB["DoNotShowItem"] or false
+    local doNotShowItem = getConfigByKey("DoNotShowItem", false)
 
     local messageTemplateUse = announceTiming == 1 and L["UsingAndHeadingTo"] or L["UsedAndArrivedAt"]
     local messageTemplateCast = announceTiming == 1 and L["CastingAndHeadingTo"] or L["CastAndArrivedAt"]
     if isSucceeded and announceTiming == 1 then
-        local spellInfo = C_Spell.GetSpellInfo(spellID)
+        local spellInfo = GetSpellInfo(spellID)
         if not spellInfo then return end
         if spellInfo.castTime ~= 0 then return end
         messageTemplateUse = L["UsedAndArrivedAt"]
@@ -34,21 +69,16 @@ function TeleportAnnouncer:announceSpell(spellID, isSucceeded)
         if TeleportAnnouncer.teleportItems[spellID] then
             message = string.format(messageTemplateUse, TeleportAnnouncer.teleportItems[spellID], destination)
         elseif teleportData.item then
-            local _, itemLink = C_Item.GetItemInfo(teleportData.item)
+            local _, itemLink = GetItemInfo(teleportData.item)
             itemLink = itemLink or L["UnknownItem"]
             message = string.format(messageTemplateUse, itemLink, destination)
         end
     end
     if not message then
-        local spellLink = C_Spell.GetSpellLink(spellID) or L["UnknownSpell"]
+        local spellLink = GetSpellLink(spellID) or L["UnknownSpell"]
         message = string.format(messageTemplateCast, spellLink, destination)
     end
-                
-    if IsInGroup() or IsInRaid() then
-        SendChatMessage(message, IsInGroup(LE_PARTY_CATEGORY_INSTANCE) and "INSTANCE_CHAT" or "PARTY")
-    elseif false then
-        print(message)
-    end
+    sendMessage(message)
 end
 
 local frame = CreateFrame("Frame")
@@ -67,8 +97,8 @@ frame:SetScript("OnEvent", function(self, event, ...)
     elseif event == "PLAYER_ENTERING_WORLD" or event == "PLAYER_EQUIPMENT_CHANGED" then
         TeleportAnnouncer:buildTeleportItems()
     elseif event == "UNIT_SPELLCAST_START" or event == "UNIT_SPELLCAST_SUCCEEDED" then
-        local unitTarget, _, spellID = ...
-        if unitTarget == "player" then
+        local unitTarget, castGUID, spellID = ...
+        if unitTarget == "player" and castGUID then
             TeleportAnnouncer:announceSpell(spellID, event == "UNIT_SPELLCAST_SUCCEEDED")
         end
     end

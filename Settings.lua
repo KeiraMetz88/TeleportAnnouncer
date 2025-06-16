@@ -24,6 +24,18 @@ function TeleportAnnouncer:prepareDBAndSettings()
                 }
             },
             {
+                controlType = CONTROL_TYPE.DROPDOWN,
+                settingType = SETTING_TYPE.ADDON_VARIABLE,
+                name = L["AnnounceChannelName"],
+                tooltip = L["AnnounceChannelTooltip"],
+                key = "AnnounceChannel",
+                default = 1,
+                options = {
+                    {L["AnnounceChannelO1Name"], L["AnnounceChannelO1Tooltip"]},
+                    {L["AnnounceChannelO2Name"], L["AnnounceChannelO2Tooltip"]},
+                }
+            },
+            {
                 controlType = CONTROL_TYPE.CHECKBOX,
                 settingType = SETTING_TYPE.ADDON_VARIABLE,
                 name = L["DoNotShowItemName"],

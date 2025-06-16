@@ -16,7 +16,7 @@ local function sendMessage(message)
     if UnitInBattleground("player") then
         channel = "INSTANCE_CHAT"
     elseif UnitInRaid("player") then
-        if IsPartyLFG then
+        if IsPartyLFG() then
             channel = "INSTANCE_CHAT"
         else
             local announceChannel = getConfigByKey("AnnounceChannel", 1)

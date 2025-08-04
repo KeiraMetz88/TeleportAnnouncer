@@ -13,6 +13,7 @@ TeleportAnnouncer.teleportSpells = {
     [445444] = {keystone = true},
     [445443] = {keystone = true},
     [445269] = {keystone = true},
+    [1237215] = {keystone = true},
 
     --巨龙时代
     [393273] = {keystone = true},
@@ -89,6 +90,7 @@ TeleportAnnouncer.teleportSpells = {
     [432257] = {},
     [432258] = {},
     [1226482] = {},
+    [1239155] = {},
 
     --道具
     [396591] = {item = 202046}, --始祖龟幸运符

@@ -9,7 +9,10 @@ local C_ChatInfo_SendChatMessage = C_ChatInfo.SendChatMessage
 local IsInGroup, UnitInRaid, UnitInParty, UnitInBattleground, IsPartyLFG = IsInGroup, UnitInRaid, UnitInParty, UnitInBattleground, IsPartyLFG
 
 local function getConfigByKey(key, default)
-    return TeleportAnnouncerDB and TeleportAnnouncerDB[key] or default
+    if TeleportAnnouncerDB and TeleportAnnouncerDB[key] ~= nil then
+        return TeleportAnnouncerDB[key]
+    end
+    return default
 end
 
 local function sendMessage(message)

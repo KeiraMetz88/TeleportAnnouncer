@@ -230,8 +230,6 @@ TeleportAnnouncer.teleportSpells = {
     [136258] = {item = 91860}, --暴风城传送门碎片
     [136259] = {item = 91850}, --奥格瑞玛传送门碎片
     [151895] = {item = 107441}, --血槌炉渣矿井传送门
-    [197104] = {item = 132119}, --奥格瑞玛传送石
-    [197104] = {item = 147879}, --先知的指引石
     [197107] = {item = 132120}, --暴风城传送石
     [216138] = {item = 138448}, --马戈斯的徽记
     [220746] = {item = 139590}, --传送卷轴：拉文霍德
@@ -273,19 +271,22 @@ TeleportAnnouncer.teleportSpells = {
 }
 
 TeleportAnnouncer.teleportItems = {}
+local teleportItemsGeneration = 0
 function TeleportAnnouncer:buildTeleportItems()
+    teleportItemsGeneration = teleportItemsGeneration + 1
+    local generation = teleportItemsGeneration
     table.wipe(TeleportAnnouncer.teleportItems)
     for inventorySlotID = INVSLOT_FIRST_EQUIPPED, INVSLOT_LAST_EQUIPPED do
         local itemID = GetInventoryItemID("player", inventorySlotID)
         if itemID then
             local item = Item:CreateFromItemID(itemID)
             item:ContinueOnItemLoad(function()
+                if generation ~= teleportItemsGeneration or GetInventoryItemID("player", inventorySlotID) ~= itemID then return end
                 local _, spellID = C_Item.GetItemSpell(itemID)
-                if spellID then
+                if spellID and TeleportAnnouncer.teleportSpells[spellID] then
                     TeleportAnnouncer.teleportItems[spellID] = GetInventoryItemLink("player", inventorySlotID)
                 end
             end)
         end
     end
 end
-

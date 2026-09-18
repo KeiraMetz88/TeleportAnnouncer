@@ -65,6 +65,10 @@ function TeleportAnnouncer:prepareDBAndSettings()
 
     _G.SLASH_TELEPORTANNOUNCER1 = "/ta";
     _G.SlashCmdList["TELEPORTANNOUNCER"] = function()
+        if InCombatLockdown() then
+            print("|cffff0000" .. ERR_NOT_IN_COMBAT .. "|r")
+            return
+        end
         Settings.OpenToCategory(category:GetID())
     end
 end
